@@ -380,7 +380,9 @@ export function completionsFromClassList(
     replacementRange.start.character += offset
 
     let important = partialClassName.substr(offset).startsWith('!')
-    if (important) {
+    let startOfVariantGroup = partialClassName.substring(offset).startsWith('(')
+
+    if (important || startOfVariantGroup) {
       replacementRange.start.character += 1
     }
 

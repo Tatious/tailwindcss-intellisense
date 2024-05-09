@@ -1,7 +1,7 @@
 import { joinWithAnd } from '../util/joinWithAnd'
 import type { State, Settings, DocumentClassName } from '../util/state'
 import { type CssConflictDiagnostic, DiagnosticKind } from './types'
-import { findClassListsInDocument, getClassNamesInClassList } from '../util/find'
+import { findClassListsInDocument, getClassNamesAndVariantsInClassList } from '../util/find'
 import { getClassNameDecls } from '../util/getClassNameDecls'
 import { getClassNameMeta } from '../util/getClassNameMeta'
 import { equal } from '../util/array'
@@ -52,7 +52,7 @@ export async function getCssConflictDiagnostics(
   const classLists = await findClassListsInDocument(state, document)
 
   classLists.forEach((classList) => {
-    const classNames = getClassNamesInClassList(classList, state.blocklist)
+    const classNames = getClassNamesAndVariantsInClassList(classList, state.blocklist)
 
     if (state.v4) {
       const groups = recordClassDetails(state, classNames)
@@ -134,6 +134,14 @@ export async function getCssConflictDiagnostics(
           }
 
           if (!propertiesAreComparable) {
+            return false
+          }
+
+          let otherVariants = otherClassName.variants
+          let currentVariants = className.variants
+
+          // Compare variants: ensure they are sorted and deeply equal
+          if (!equal(otherVariants.sort(), currentVariants.sort())) {
             return false
           }
 

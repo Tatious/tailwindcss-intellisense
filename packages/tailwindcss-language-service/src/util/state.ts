@@ -143,7 +143,8 @@ export type DocumentClassName = {
   className: string
   range: Range
   relativeRange: Range
-  classList: DocumentClassList
+  classList: DocumentClassList,
+  variants?: string[];
 }
 
 export type DocumentHelperFunction = {

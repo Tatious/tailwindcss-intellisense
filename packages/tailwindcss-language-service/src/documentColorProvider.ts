@@ -1,7 +1,7 @@
 import type { State } from './util/state'
 import {
   findClassListsInDocument,
-  getClassNamesInClassList,
+  getClassNamesAndVariantsInClassList,
   findHelperFunctionsInDocument,
 } from './util/find'
 import { getColor, getColorFromValue, culoriColorToVscodeColor } from './util/color'
@@ -23,7 +23,7 @@ export async function getDocumentColors(
 
   let classLists = await findClassListsInDocument(state, document)
   classLists.forEach((classList) => {
-    let classNames = getClassNamesInClassList(classList, state.blocklist)
+    let classNames = getClassNamesAndVariantsInClassList(classList, state.blocklist)
     classNames.forEach((className) => {
       let color = getColor(state, className.className)
       if (color === null || typeof color === 'string' || (color.alpha ?? 1) === 0) {

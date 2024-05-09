@@ -70,6 +70,116 @@ export function getClassNamesInClassList(
   return names
 }
 
+const SEPARATOR_CHARS = new Set([
+  ' ',
+  '\n',
+  '\t',
+  '\r',
+  '\f',
+  '\v',
+  '\u00a0',
+  '\u1680',
+  '\u2000',
+  '\u200a',
+  '\u2028',
+  '\u2029',
+  '\u202f',
+  '\u205f',
+  '\u3000',
+  '\ufeff',
+])
+
+export function getClassNamesAndVariantsInClassList(
+  { classList, range, important }: DocumentClassList,
+  blocklist: State['blocklist'],
+): DocumentClassName[] {
+  let searchingForStart = true
+  const globalStack: string[] = []
+  const globalStackLengths: number[] = []
+  const localStack: string[] = []
+  const classInfo: DocumentClassName[] = []
+  let wordIndex = 0
+
+  const pushClassInfo = (idx: number) => {
+    const className = classList.substring(wordIndex, idx)
+
+    const localStackOffset = localStack.reduce((acc, item, index) => {
+      // Add item length and, if it's not the last item, add 1 for the separator
+      return acc + item.length + 1
+    }, 0)
+
+    const start = indexToPosition(classList, idx - className.length - localStackOffset)
+    const end = indexToPosition(classList, idx - localStackOffset)
+
+    if (!blocklist.includes(className))
+      classInfo.push({
+        className,
+        classList: {
+          classList,
+          range,
+          important,
+        },
+        variants: [...globalStack, ...localStack],
+        relativeRange: {
+          start,
+          end,
+        },
+        range: {
+          start: {
+            line: range.start.line + start.line,
+            character: (end.line === 0 ? range.start.character : 0) + start.character,
+          },
+          end: {
+            line: range.start.line + end.line,
+            character: (end.line === 0 ? range.start.character : 0) + end.character,
+          },
+        },
+      })
+  }
+
+  for (let idx = 0; idx < classList.length; idx++) {
+    const currentChar = classList[idx]
+    if (!searchingForStart && SEPARATOR_CHARS.has(currentChar)) {
+      pushClassInfo(idx)
+      localStack.length = 0
+
+      searchingForStart = true
+    } else if (!searchingForStart && currentChar === ':') {
+      localStack.push(classList.substring(wordIndex, idx))
+      searchingForStart = true
+      continue
+    } else if (currentChar === '(') {
+      globalStack.push(...localStack)
+      globalStackLengths.push(localStack.length)
+      localStack.length = 0
+      searchingForStart = true
+    } else if (currentChar === ')') {
+      if (!searchingForStart) {
+        pushClassInfo(idx)
+      }
+
+      localStack.length = 0
+
+      const lastLength = globalStackLengths.pop()
+      if (lastLength) {
+        globalStack.length -= lastLength
+      }
+      searchingForStart = true
+    } else if (searchingForStart && !SEPARATOR_CHARS.has(currentChar)) {
+      wordIndex = idx
+      searchingForStart = false
+    } else {
+      continue
+    }
+  }
+
+  if (!searchingForStart) {
+    pushClassInfo(classList.length)
+  }
+
+  return classInfo
+}
+
 export async function findClassNamesInRange(
   state: State,
   doc: TextDocument,
@@ -79,7 +189,7 @@ export async function findClassNamesInRange(
 ): Promise<DocumentClassName[]> {
   const classLists = await findClassListsInRange(state, doc, range, mode, includeCustom)
   return flatten(
-    classLists.map((classList) => getClassNamesInClassList(classList, state.blocklist)),
+    classLists.map((classList) => getClassNamesAndVariantsInClassList(classList, state.blocklist)),
   )
 }
 

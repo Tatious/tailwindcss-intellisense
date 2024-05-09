@@ -90,7 +90,9 @@ async function provideClassNameHover(
   }
 
   if (state.jit) {
-    let { root, rules } = jit.generateRules(state, [className.className])
+    let { root, rules } = jit.generateRules(state, [
+      (className.variants ?? []).map((s) => `${s}:`).join('') + className.className,
+    ])
 
     if (rules.length === 0) {
       return null
