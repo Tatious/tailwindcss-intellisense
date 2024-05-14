@@ -1,7 +1,11 @@
 import { joinWithAnd } from '../util/joinWithAnd'
 import type { State, Settings, DocumentClassName } from '../util/state'
 import { type CssConflictDiagnostic, DiagnosticKind } from './types'
-import { findClassListsInDocument, getClassNamesAndVariantsInClassList } from '../util/find'
+import {
+  findClassListsInDocument,
+  getClassNamesAndVariantsInClassList,
+  getClassNamesInClassList,
+} from '../util/find'
 import { getClassNameDecls } from '../util/getClassNameDecls'
 import { getClassNameMeta } from '../util/getClassNameMeta'
 import { equal } from '../util/array'
@@ -46,13 +50,19 @@ export async function getCssConflictDiagnostics(
   settings: Settings,
 ): Promise<CssConflictDiagnostic[]> {
   let severity = settings.tailwindCSS.lint.cssConflict
+
   if (severity === 'ignore') return []
+
+  let variantGroupsEnabled = settings.tailwindCSS.experimental.variantGroups
 
   let diagnostics: CssConflictDiagnostic[] = []
   const classLists = await findClassListsInDocument(state, document)
 
   classLists.forEach((classList) => {
-    const classNames = getClassNamesAndVariantsInClassList(classList, state.blocklist)
+    const getClassNames = variantGroupsEnabled
+      ? getClassNamesAndVariantsInClassList
+      : getClassNamesInClassList
+    const classNames = getClassNames(classList, state.blocklist)
 
     if (state.v4) {
       const groups = recordClassDetails(state, classNames)

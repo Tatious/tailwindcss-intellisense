@@ -3,6 +3,7 @@ import {
   findClassListsInDocument,
   getClassNamesAndVariantsInClassList,
   findHelperFunctionsInDocument,
+  getClassNamesInClassList,
 } from './util/find'
 import { getColor, getColorFromValue, culoriColorToVscodeColor } from './util/color'
 import { stringToPath } from './util/stringToPath'
@@ -23,7 +24,12 @@ export async function getDocumentColors(
 
   let classLists = await findClassListsInDocument(state, document)
   classLists.forEach((classList) => {
-    let classNames = getClassNamesAndVariantsInClassList(classList, state.blocklist)
+    let variantGroupsEnabled = settings.tailwindCSS.experimental.variantGroups
+    const getClassNames = variantGroupsEnabled
+      ? getClassNamesAndVariantsInClassList
+      : getClassNamesInClassList
+
+    let classNames = getClassNames(classList, state.blocklist)
     classNames.forEach((className) => {
       let color = getColor(state, className.className)
       if (color === null || typeof color === 'string' || (color.alpha ?? 1) === 0) {

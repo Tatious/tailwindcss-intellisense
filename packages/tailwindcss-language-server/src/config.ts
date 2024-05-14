@@ -35,6 +35,7 @@ function getDefaultSettings(): Settings {
       experimental: {
         classRegex: [],
         configFile: null,
+        variantGroups: false,
       },
     },
   }

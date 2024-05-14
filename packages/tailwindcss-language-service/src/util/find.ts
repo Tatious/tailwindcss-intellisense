@@ -109,7 +109,7 @@ export function getClassNamesAndVariantsInClassList(
     }, 0)
 
     const start = indexToPosition(classList, idx - className.length - localStackOffset)
-    const end = indexToPosition(classList, idx - localStackOffset)
+    const end = indexToPosition(classList, idx)
 
     if (!blocklist.includes(className))
       classInfo.push({
@@ -188,9 +188,16 @@ export async function findClassNamesInRange(
   includeCustom: boolean = true,
 ): Promise<DocumentClassName[]> {
   const classLists = await findClassListsInRange(state, doc, range, mode, includeCustom)
-  return flatten(
-    classLists.map((classList) => getClassNamesAndVariantsInClassList(classList, state.blocklist)),
-  )
+
+  let settings = (await state.editor.getConfiguration(doc.uri)).tailwindCSS
+
+  let variantGroupsEnabled = settings.experimental.variantGroups
+
+  const getClassNames = variantGroupsEnabled
+    ? getClassNamesAndVariantsInClassList
+    : getClassNamesInClassList
+
+  return flatten(classLists.map((classList) => getClassNames(classList, state.blocklist)))
 }
 
 export async function findClassNamesInDocument(

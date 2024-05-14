@@ -64,6 +64,7 @@ export type TailwindCssSettings = {
   experimental: {
     classRegex: string[]
     configFile: string | Record<string, string | string[]>
+    variantGroups: boolean
   }
   files: {
     exclude: string[]
